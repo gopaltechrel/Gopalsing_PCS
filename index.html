@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gopalsing Placement Cell</title>
+<link rel="icon" type="image/x-icon" href="https://png.pngtree.com/png-clipart/20211116/original/pngtree-letter-g-logo-design-vector-png-png-image_6946247.png">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#f8f9fa}
+    .card-job{cursor:default}
+    .status-badge.open{background:#d1e7dd;color:#0f5132}
+    .status-badge.closed{background:#f8d7da;color:#842029}
+    .sidebar{max-height:78vh;overflow:auto}
+    .small-muted{font-size:0.85rem;color:#6c757d}
+    .company-logo{width:56px;height:56px;object-fit:cover;border-radius:8px}
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-white bg-white shadow-sm mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#">Gopalsing Placement Cell</a>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" id="exportBtn">Export JSON</button>
+        <button class="btn btn-outline-secondary" id="importBtn">Import JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="btn btn-primary" id="newJobBtn">Post Job</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid">
+    <div class="row">
+      <aside class="col-lg-3 sidebar mb-4">
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Filters</h5>
+            <div class="mb-2"><input id="searchInput" class="form-control" placeholder="Search jobs, company, role" /></div>
+            <div class="mb-2"><select id="deptFilter" class="form-select"><option value="all">All departments</option><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option></select></div>
+            <div class="mb-2"><select id="typeFilter" class="form-select"><option value="all">All types</option><option value="internship">Internship</option><option value="fulltime">Full Time</option></select></div>
+            <div class="d-grid gap-2"><button id="clearFilters" class="btn btn-outline-secondary">Clear filters</button></div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h6>Utilities</h6>
+            <div class="d-grid gap-2">
+              <button class="btn btn-sm btn-outline-primary" id="viewApplications">View Applications</button>
+              <button class="btn btn-sm btn-outline-secondary" id="loadDemo">Load demo data</button>
+              <button class="btn btn-sm btn-outline-danger" id="clearAll">Clear all</button>
+            </div>
+            <hr>
+            <div class="small-muted">Data stored in localStorage. Export/Import to backup.</div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="col-lg-9">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <div><h4 class="mb-0">Job Listings</h4><div class="small-muted">Manage campus placements, internships & profiles</div></div>
+          <div class="small-muted">Jobs: <span id="jobCount">0</span> • Applications: <span id="appCount">0</span></div>
+        </div>
+
+        <div id="jobsRow" class="row g-3"></div>
+
+        <hr class="my-4">
+        <div class="card shadow-sm"><div class="card-body"><h6>Activity / Debug</h6><pre id="debug" style="max-height:180px;overflow:auto;display:none" class="p-2 bg-light"></pre></div></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- New Job Modal -->
+  <div class="modal fade" id="jobModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="jobForm"><div class="modal-header"><h5 class="modal-title">Post Job / Internship</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2"><input id="jobCompany" class="form-control" placeholder="Company name" required></div>
+        <div class="mb-2"><input id="jobRole" class="form-control" placeholder="Role / Position" required></div>
+        <div class="mb-2"><input id="jobDept" class="form-control" placeholder="Department (e.g. Computer Science)"></div>
+        <div class="mb-2"><select id="jobType" class="form-select"><option value="internship">Internship</option><option value="fulltime">Full Time</option></select></div>
+        <div class="mb-2"><input id="jobLocation" class="form-control" placeholder="Location" /></div>
+        <div class="mb-2"><input id="jobCTC" class="form-control" placeholder="CTC / Stipend" /></div>
+        <div class="mb-2"><textarea id="jobDesc" class="form-control" placeholder="Short description"></textarea></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary" type="submit">Post</button><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+    </form>
+  </div></div></div>
+
+  <!-- Apply Modal -->
+  <div class="modal fade" id="applyModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="applyForm"><div class="modal-header"><h5 class="modal-title">Apply for Job</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="applyJobId" />
+        <div class="mb-2"><input id="stuName" class="form-control" placeholder="Student name" required></div>
+        <div class="mb-2"><input id="stuEmail" class="form-control" type="email" placeholder="Email" required></div>
+        <div class="mb-2"><input id="stuDept" class="form-control" placeholder="Department" /></div>
+        <div class="mb-2"><input id="stuYear" class="form-control" placeholder="Year (e.g. 3)" /></div>
+        <div class="mb-2"><textarea id="stuNote" class="form-control" placeholder="Short note / resume link"></textarea></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary" type="submit">Submit Application</button><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+    </form>
+  </div></div></div>
+
+  <!-- Applications Modal -->
+  <div class="modal fade" id="appsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">All Applications</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><div id="appsList"></div></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const STORAGE_KEY = 'placement_cell_v1';
+    let state = { jobs: [], applications: [] };
+    function uid(){return Math.random().toString(36).slice(2,9)}
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function load(){ const raw = localStorage.getItem(STORAGE_KEY); state = raw?JSON.parse(raw):{jobs:[],applications:[]}; }
+
+    function renderJobs(){ const row = document.getElementById('jobsRow'); row.innerHTML=''; const search = document.getElementById('searchInput').value.trim().toLowerCase(); const dept = document.getElementById('deptFilter').value; const type = document.getElementById('typeFilter').value;
+      for(const j of state.jobs){ if(search && !(j.company+j.role+j.description).toLowerCase().includes(search)) continue; if(dept!=='all' && j.department && j.department!==dept) continue; if(type!=='all' && j.type!==type) continue;
+        const col = document.createElement('div'); col.className='col-12 col-md-6 col-lg-4';
+        const card = document.createElement('div'); card.className='card card-job shadow-sm';
+        card.innerHTML = `<div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <img src="${j.logo||'https://via.placeholder.com/56'}" class="company-logo" alt="logo" />
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                  <div><h6 class="mb-0">${escapeHtml(j.role)}</h6><div class="small-muted">${escapeHtml(j.company)} • ${escapeHtml(j.location||'—')}</div></div>
+                  <div class="text-end"><div class="badge status-badge ${j.status}">${capitalize(j.status)}</div><div class="small-muted">${escapeHtml(j.type)}</div></div>
+                </div>
+                <p class="mt-2 mb-2 small-muted">${escapeHtml(j.description||'—')}</p>
+                <div class="d-flex gap-2"><button class="btn btn-sm btn-primary" data-action="apply" data-id="${j.id}">Apply</button><button class="btn btn-sm btn-outline-secondary" data-action="view" data-id="${j.id}">View</button></div>
+              </div>
+            </div>
+          </div>`;
+        col.appendChild(card); row.appendChild(col);
+      }
+      document.getElementById('jobCount').textContent = state.jobs.length;
+      document.getElementById('appCount').textContent = state.applications.length;
+    }
+
+    function escapeHtml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function capitalize(s){ return s? s.charAt(0).toUpperCase()+s.slice(1):''; }
+
+
+
+    // init
+    load(); renderJobs();
+
+    // new job
+    document.getElementById('newJobBtn').addEventListener('click', ()=>{ document.getElementById('jobForm').reset(); var md = new bootstrap.Modal(document.getElementById('jobModal')); md.show(); });
+    document.getElementById('jobForm').addEventListener('submit',(e)=>{ e.preventDefault(); const j={ id:uid(), company:document.getElementById('jobCompany').value.trim(), role:document.getElementById('jobRole').value.trim(), department:document.getElementById('jobDept').value.trim(), type:document.getElementById('jobType').value, location:document.getElementById('jobLocation').value.trim(), ctc:document.getElementById('jobCTC').value.trim(), description:document.getElementById('jobDesc').value.trim(), status:'open', logo:'' }; state.jobs.unshift(j); save(); renderJobs(); bootstrap.Modal.getInstance(document.getElementById('jobModal')).hide(); });
+
+    // job list actions
+    document.getElementById('jobsRow').addEventListener('click',(e)=>{
+      const action = e.target.getAttribute('data-action'); const id = e.target.getAttribute('data-id'); if(!action) return; const job = state.jobs.find(x=>x.id===id); if(!job) return;
+      if(action==='apply'){ document.getElementById('applyForm').reset(); document.getElementById('applyJobId').value = id; var md = new bootstrap.Modal(document.getElementById('applyModal')); md.show(); }
+      if(action==='view'){ alert(JSON.stringify(job,null,2)); }
+    });
+
+    // apply form
+    document.getElementById('applyForm').addEventListener('submit',(e)=>{ e.preventDefault(); const app = { id:uid(), jobId:document.getElementById('applyJobId').value, name:document.getElementById('stuName').value.trim(), email:document.getElementById('stuEmail').value.trim(), department:document.getElementById('stuDept').value.trim(), year:document.getElementById('stuYear').value.trim(), note:document.getElementById('stuNote').value.trim(), status:'applied', created:Date.now() }; state.applications.unshift(app); save(); renderJobs(); bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide(); alert('Application submitted (demo)'); });
+
+    // view applications
+    document.getElementById('viewApplications').addEventListener('click', ()=>{ const list = document.getElementById('appsList'); list.innerHTML=''; if(state.applications.length===0) list.innerHTML='<div class="text-muted">No applications</div>'; for(const a of state.applications){ const job = state.jobs.find(j=>j.id===a.jobId); const div = document.createElement('div'); div.className='card mb-2'; div.innerHTML=`<div class="card-body d-flex justify-content-between"><div><strong>${escapeHtml(a.name)}</strong> <div class="small-muted">${escapeHtml(a.email)} • ${escapeHtml(a.department)} • Year ${escapeHtml(a.year)}</div><div class="mt-2">Applied for: <strong>${escapeHtml(job?job.role:'—')}</strong> at <em>${escapeHtml(job?job.company:'—')}</em></div></div><div class="text-end"><div class="small-muted">${new Date(a.created).toLocaleString()}</div><div class="mt-2"><button class="btn btn-sm btn-outline-success" data-action="shortlist" data-id="${a.id}">Shortlist</button> <button class="btn btn-sm btn-outline-danger" data-action="reject" data-id="${a.id}">Reject</button></div></div></div>`; list.appendChild(div); }
+      var md = new bootstrap.Modal(document.getElementById('appsModal')); md.show(); });
+
+    // shortlist/reject actions inside apps modal
+    document.getElementById('appsList').addEventListener('click',(e)=>{ const action = e.target.getAttribute('data-action'); const id = e.target.getAttribute('data-id'); if(!action) return; const a = state.applications.find(x=>x.id===id); if(!a) return; if(action==='shortlist'){ a.status='shortlisted'; save(); alert('Shortlisted (demo)'); } if(action==='reject'){ a.status='rejected'; save(); alert('Rejected (demo)'); } document.getElementById('appsList').querySelectorAll('*').forEach(n=>n.removeEventListener); });
+
+    // filters
+    document.getElementById('searchInput').addEventListener('input', renderJobs); document.getElementById('deptFilter').addEventListener('change', renderJobs); document.getElementById('typeFilter').addEventListener('change', renderJobs); document.getElementById('clearFilters').addEventListener('click', ()=>{ document.getElementById('searchInput').value=''; document.getElementById('deptFilter').value='all'; document.getElementById('typeFilter').value='all'; renderJobs(); });
+
+    // export / import
+    document.getElementById('exportBtn').addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='placement-data.json'; a.click(); URL.revokeObjectURL(url); });
+    document.getElementById('importBtn').addEventListener('click', ()=>{ document.getElementById('importFile').click(); });
+    document.getElementById('importFile').addEventListener('change', async(e)=>{ const f = e.target.files[0]; if(!f) return; try{ const text = await f.text(); const data = JSON.parse(text); if(!data.jobs || !data.applications) throw 0; state = data; save(); renderJobs(); alert('Imported'); } catch(err){ alert('Invalid file'); } e.target.value=''; });
+
+    // demo / clear
+    document.getElementById('loadDemo').addEventListener('click', ()=>{ state = { jobs: [ {id:'j1',company:'ABC Corp',role:'Software Intern',department:'Computer Science',type:'internship',location:'Pune',ctc:'10k/month',description:'Summer internship - software dev',status:'open',logo:''}, {id:'j2',company:'XYZ Solutions',role:'Frontend Engineer',department:'Computer Science',type:'fulltime',location:'Remote',ctc:'6 LPA',description:'React developer role',status:'open',logo:''} ], applications: [ {id:'a1',jobId:'j1',name:'Gopal',email:'gopal@example.com',department:'Computer Science',year:'3',note:'Resume: link',status:'applied',created:Date.now()} ] }; save(); renderJobs(); alert('Demo loaded'); });
+    document.getElementById('clearAll').addEventListener('click', ()=>{ if(!confirm('Clear all jobs and applications?')) return; state={jobs:[],applications:[]}; save(); renderJobs(); });
+
+    // keyboard debug
+    window.addEventListener('keydown',(e)=>{ if(e.ctrlKey && e.key==='d'){ const dbg=document.getElementById('debug'); dbg.style.display = dbg.style.display==='none'?'block':'none'; dbg.textContent = JSON.stringify(state,null,2); } });
+  </script>
+  <footer class="mt-4 text-muted small">Created✏️By Dr.Gopalsing Girase💻</footer>
+
+
+<style>
+body {
+  background-image: url("https://programmingtrick.com/css-assignment/photo-gallery/a.jpg");
+}
+</style>
+
+</body>
+</html>
